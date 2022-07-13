@@ -1,0 +1,2 @@
+C:\Users\JYPLab\source\repos\OpenCV_Test\x64\Release\OpenCV_Test.exe
+C:\Users\JYPLab\Desktop\Haptin rendering_ Edge Detection\1. CV Code\Example C++\OpenCV_Test\x64\Release\OpenCV_Test.exe
