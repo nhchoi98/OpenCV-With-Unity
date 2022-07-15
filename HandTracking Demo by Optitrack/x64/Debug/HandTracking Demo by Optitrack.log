@@ -1,0 +1,8 @@
+﻿  Main.cpp
+C:\Users\JYPLab\source\repos\HandTracking Demo by Optitrack\Main.cpp(287,32): warning C4129: '/': 문자 이스케이프 시퀀스를 인식할 수 없습니다.
+C:\Users\JYPLab\source\repos\HandTracking Demo by Optitrack\Main.cpp(1260,21): error C2440: '초기화 중': 'const char [2]'에서 'char *'(으)로 변환할 수 없습니다.
+C:\Users\JYPLab\source\repos\HandTracking Demo by Optitrack\Main.cpp(1260,16): message : 문자열 리터럴로부터의 변환은 const 한정자가 손실됩니다(/Zc:strictStrings 참조).
+C:\Users\JYPLab\source\repos\HandTracking Demo by Optitrack\Main.cpp(1262,8): error C2664: 'BOOL GetComputerNameW(LPWSTR,LPDWORD)': 인수 1을(를) 'char [1024]'에서 'LPWSTR'(으)로 변환할 수 없습니다.
+C:\Users\JYPLab\source\repos\HandTracking Demo by Optitrack\Main.cpp(1262,25): message : 가리킨 형식이 관련이 없습니다. 변환하려면 reinterpret_cast, C 스타일 캐스트 또는 괄호가 있는 함수 스타일 캐스트가 필요합니다.
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\um\winbase.h(7353,1): message : 'GetComputerNameW' 선언을 참조하십시오.
+C:\Users\JYPLab\source\repos\HandTracking Demo by Optitrack\Main.cpp(2403,24): warning C4244: '초기화 중': '__int64'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
