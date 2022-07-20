@@ -48,7 +48,7 @@ Usage [optional]:
 #include "Wrist.h"
 #include "vector3.h"
 #include "MarkerInfo.h"
-
+#include "SerialClass.h"
 
 #pragma warning( disable : 4996 )
 
@@ -74,7 +74,7 @@ Usage [optional]:
 #define NAT_KEEPALIVE               10
 #define NAT_UNRECOGNIZED_REQUEST    100
 #define UNDEFINED                   999999.9999
-#define UPPER_HAND                  "Upperhand" // ¼ÕÀÇ È¸Àü Á¤µµ Á¤º¸¿Í ¸¶Ä¿ Á¤º¸¸¦ °®°í ¿À±â À§ÇÑ Model ID , Streaming ID == 1
+#define UPPER_HAND                  "Upperhand" // ì†ì˜ íšŒì „ ì •ë„ ì •ë³´ì™€ ë§ˆì»¤ ì •ë³´ë¥¼ ê°–ê³  ì˜¤ê¸° ìœ„í•œ Model ID , Streaming ID == 1
 #define UPPER_HAND_ID               1
 
 
@@ -112,9 +112,9 @@ int gCommandResponse = 0;
 int gCommandResponseSize = 0;
 unsigned char gCommandResponseString[MAX_PATH];
 int gCommandResponseCode = 0;
-Wrist myWrist; // ¼Õ¸ñ °´Ã¼
-Marker myMarker; // ÇÎ°ÅÆÁ Ç¥½Ã¿ë  marker °´Ã¼ . ÇöÀç´Â ½Ì±Û·Î ³öµÒ (07.15)
-
+Wrist myWrist; // ì†ëª© ê°ì²´
+Marker myMarker; // í•‘ê±°íŒ í‘œì‹œìš©  marker ê°ì²´ . í˜„ì¬ëŠ” ì‹±ê¸€ë¡œ ë†”ë‘  (07.15)
+Serial* sp = new Serial("\\\\.\\COM4"); // ì‹œë¦¬ì–¼ í¬íŠ¸ ë²ˆí˜¸ ê¼­ ë³´ê³  ë°”ê¿”ì¤˜ì•¼í•¨ 
 
 typedef struct sParsedArgs
 {
@@ -298,6 +298,7 @@ void MakeAlnum(char* szName, int len)
     }
 }
 
+
 /*
 * CommandListenThread
 * Manage the command channel
@@ -313,9 +314,16 @@ DWORD WINAPI CommandListenThread(void* dummy)
     sPacket* PacketOut = new sPacket();
     addr_len = sizeof(struct sockaddr);
 
-    if (PacketIn && PacketOut)
+    // ì‹œë¦¬ì–¼ ê°ì²´ ê´€ë ¨ ë¶€ë¶„ 
+    char incomingData[256] = "";
+    int dataLength = 255;
+    int readResult = 0;
+
+
+    if (PacketIn && PacketOut && sp->IsConnected())
     {
         printf("[PacketClient CLTh] CommandListenThread Started\n");
+
         while (1)
         {
             // Send a Keep Alive message to Motive (required for Unicast transmission only)
@@ -330,6 +338,10 @@ DWORD WINAPI CommandListenThread(void* dummy)
                 }
             }
 
+            // Serial í†µì‹  ì‹œí–‰ 
+            // 		readResult = sp->ReadData(incomingData, dataLength);
+            //incomingData[readResult] = 0;
+            //printf("Serial incoming: %s \n", incomingData);
             // blocking with timeout
             nDataBytesReceived = recvfrom(gCommandSocket, (char*)PacketIn, sizeof(sPacket),
                 0, (struct sockaddr*)&TheirAddress, &addr_len);
@@ -414,6 +426,9 @@ DWORD WINAPI CommandListenThread(void* dummy)
     }
     else {
         printf("[PacketClient CLTh] CommandListenThread Start FAILURE\n");
+        if (!sp->IsConnected())
+            printf("Check status of arduino board.\n");
+
         retValue = 1;
     }
     if (PacketIn)
@@ -450,8 +465,10 @@ DWORD WINAPI DataListenThread(void* dummy)
     while (1)
     {
         // Block until we receive a datagram from the network (from anyone including ourselves)
+
         int nDataBytesReceived = recvfrom(gDataSocket, szData, nDataBytes, 0, (sockaddr*)&TheirAddress, &addr_len);
         // Once we have bytes recieved Unpack organizes all the data
+        // Once we have bytes recieved Unpack organizes all the datad
         if (nDataBytesReceived > 0)
         {
             Unpack(szData);
@@ -498,6 +515,7 @@ DWORD WINAPI DataListenThread(void* dummy)
             }
         }
     }
+    sp->~Serial();
     if (szData)
     {
         delete[] szData;
@@ -983,6 +1001,8 @@ int main(int argc, char* argv[])
     dataListenThread_Handle = CreateThread(&dataListenThreadSecurityAttribs, 0, DataListenThread, NULL, 0, &dataListenThread_ID);
     printf("[PacketClient Main] DataListenThread started\n");
 
+    // ì‹œë¦¬ì–¼ í†µì‹ ì„ ê°œì‹œí•˜ëŠ” ìŠ¤ë ˆë“œ ì‹œì‘í•˜ê¸°. 
+    
     // server address for commands
     memset(&gHostAddr, 0, sizeof(gHostAddr));
     gHostAddr.sin_family = AF_INET;
@@ -1796,7 +1816,7 @@ char* UnpackCameraDescription(char* ptr, char* targetPtr, int major, int minor)
 
 char* UnpackFrameData(char* inptr, int nBytes, int major, int minor)
 {
-    char* ptr = inptr; // µ¥ÀÌÅÍ¸¦ ¹Ş¾Æ¿Ã string º¯¼ö 
+    char* ptr = inptr; // ë°ì´í„°ë¥¼ ë°›ì•„ì˜¬ string ë³€ìˆ˜ 
     printf("MoCap Frame Begin\n---------------- - \n");
 
     ptr = UnpackFramePrefixData(ptr, major, minor);
@@ -1815,6 +1835,7 @@ char* UnpackFrameData(char* inptr, int nBytes, int major, int minor)
 
     ptr = UnpackFrameSuffixData(ptr, major, minor);
     printf("MoCap Frame End\n---------------- - \n");
+    fflush(stdin);
     return ptr;
 }
 
@@ -1844,7 +1865,7 @@ char* UnpackMarkersetData(char* ptr, int major, int minor)
         ptr += nDataBytes;
         MakeAlnum(szName, MAX_NAMELENGTH);
         //if(szName== UPPER_HAND)
-            printf("Model Name       : %s\n", szName); // Rigidbody ÀÎ °æ¿ì rigidbody ÀÌ¸§À» ºÒ·¯¿È 
+            printf("Model Name       : %s\n", szName); // Rigidbody ì¸ ê²½ìš° rigidbody ì´ë¦„ì„ ë¶ˆëŸ¬ì˜´ 
 
         // marker data
         int nMarkers = 0; memcpy(&nMarkers, ptr, 4); ptr += 4;
@@ -1855,7 +1876,7 @@ char* UnpackMarkersetData(char* ptr, int major, int minor)
             float x = 0; memcpy(&x, ptr, 4); ptr += 4;
             float y = 0; memcpy(&y, ptr, 4); ptr += 4;
             float z = 0; memcpy(&z, ptr, 4); ptr += 4;
-            // ÀÌºÎºĞ¿¡ ¸¶Ä¿ À§Ä¡Á¤º¸ Ç¥±âÇØÁÖ±â 
+            // ì´ë¶€ë¶„ì— ë§ˆì»¤ ìœ„ì¹˜ì •ë³´ í‘œê¸°í•´ì£¼ê¸° 
             printf("  Marker %3.1d : [x=%3.2f,y=%3.2f,z=%3.2f]\n", j, x, y, z);
         }
     }
@@ -1900,7 +1921,7 @@ char* UnpackRigidBodyData(char* ptr, int major, int minor)
 
         printf("  RB: %3.1d ID : %3.1d\n", j, ID);
         
-        if (ID == UPPER_HAND_ID) // ¸¸¾à ¼Õ¸ñÀÌ °¨ÁöµÇ¾ú´Ù¸é 
+        if (ID == UPPER_HAND_ID) // ë§Œì•½ ì†ëª©ì´ ê°ì§€ë˜ì—ˆë‹¤ë©´ 
             myWrist.SetWristInfo(pos, orientation);
         
         //printf("  RB: %3.1d ID : %3.1d\n", j, ID);
@@ -2111,8 +2132,8 @@ char* UnpackLabeledMarkerData(char* ptr, int major, int minor)
                 memcpy(&residual, ptr, 4); ptr += 4;
             }
 
-            // ¿©±â¼­ °¢ ¸¶Ä¿ÀÇ POS¸¦ Ã³¸®ÇØÁà¾ß°Ú³×. ±×·³ Ã³À½ ÀÎ½Ä ¹Ş°í ³ª¼­ ModelID¶û ¸¶Ä¿¼ÂÀÇ ÇÒ´ç ID ¸ÅÄªÇØ¼­ °Å±â¿¡ ¸Â°Ô
-            // µ¥ÀÌÅÍ¸¦ °¡Á®¿Àµµ·Ï ¹Ù²ãÁà¾ß°Ú±¸³ª. ssss
+            // ì—¬ê¸°ì„œ ê° ë§ˆì»¤ì˜ POSë¥¼ ì²˜ë¦¬í•´ì¤˜ì•¼ê² ë„¤. ê·¸ëŸ¼ ì²˜ìŒ ì¸ì‹ ë°›ê³  ë‚˜ì„œ ModelIDë‘ ë§ˆì»¤ì…‹ì˜ í• ë‹¹ ID ë§¤ì¹­í•´ì„œ ê±°ê¸°ì— ë§ê²Œ
+            // ë°ì´í„°ë¥¼ ê°€ì ¸ì˜¤ë„ë¡ ë°”ê¿”ì¤˜ì•¼ê² êµ¬ë‚˜. ssss
 
             /*
             printf("  ID  : [MarkerID: %d] [ModelID: %d]\n", markerID, modelID);
@@ -2121,10 +2142,16 @@ char* UnpackLabeledMarkerData(char* ptr, int major, int minor)
             printf("    err:  [%3.2f]\n", residual);
             */
 
-            myMarker.SetMarkerPos(pos); // ¸¶Ä¿ÀÇ À§Ä¡¸¦ ¾÷µ¥ÀÌÆ® ÇØÁÜ 
-            if(myMarker.IsCollide())
-                // ¾ÆµÎÀÌ³ë·Î ½ÅÈ£¸¦ º¸³¿. 
-            // ¾ÆµÎÀÌ³ë¿Í Åë½ÅÇÏ´Â °´Ã¼¸¦ ÅëÇØ »óÅÂ¸¦ Áö¼ÓÀûÀ¸·Î ¾÷µ¥ÀÌÆ® ÇØÁÜ. ´Ü, ¿¬°áÀÌ µÇ¾î ÀÖÀ»¶§¸¸. 
+            myMarker.SetMarkerPos(pos); // ë§ˆì»¤ì˜ ìœ„ì¹˜ë¥¼ ì—…ë°ì´íŠ¸ í•´ì¤Œ 
+           // Vector3 temp;
+           // myMarker.GetMarkerPos(temp); 
+            //cout << temp; // í…ŒìŠ¤íŠ¸ìš©ìœ¼ë¡œ ë§ˆì»¤ì˜ ìœ„ì¹˜ë¥¼ ì¶œë ¥í•¨ 
+            if (myMarker.IsCollide()) {
+                sp->WriteData("true\n", 5);
+                fflush(stdin);
+              
+            }
+  
         }
     }
     return ptr;
