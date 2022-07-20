@@ -1,23 +1,24 @@
 #pragma once
 #include <math.h>
+#include <iostream>
 using namespace std;
 
 /// <summary>
-/// Æ¯Á¤ ¸¶Ä¿ÀÇ Æ÷ÀÎÆ®¸¦ ³ªÅ¸³»±â À§ÇØ »ç¿ëÇÏ´Â Vector3 Å¬·¡½º.
-/// x,y,z pointÀÇ ÁÂÇ¥¸¦ Á¦°øÇØÁØ´Ù. 
+/// íŠ¹ì • ë§ˆì»¤ì˜ í¬ì¸íŠ¸ë¥¼ ë‚˜íƒ€ë‚´ê¸° ìœ„í•´ ì‚¬ìš©í•˜ëŠ” Vector3 í´ë˜ìŠ¤.
+/// x,y,z pointì˜ ì¢Œí‘œë¥¼ ì œê³µí•´ì¤€ë‹¤. 
 /// </summary>
 
 class Vector3 {
 
 	public:
-		Vector3() // ±âº» »ı¼ºÀÚ 
+		Vector3() // ê¸°ë³¸ ìƒì„±ì 
 		{
 			x = 0;
 			y = 0;
 			z = 0;
 		}
 
-		Vector3(const float x, const float y, const float z) // X,Y,Z °ªÀ» ´Ù ¾Ë ¶§ÀÇ »ı¼ºÀÚ 
+		Vector3(const float x, const float y, const float z) // X,Y,Z ê°’ì„ ë‹¤ ì•Œ ë•Œì˜ ìƒì„±ì 
 		{
 			this->x = x;
 			this->y = y;
@@ -30,7 +31,7 @@ class Vector3 {
 			return magnitude;
 		}
 
-		// °ªÀ» °¡Áö°í ¿À¸é ÀÌ¸¦ ´Ù¸¥ °÷¿¡ ÀúÀå½ÃÄÑÁÜ 
+		// ê°’ì„ ê°€ì§€ê³  ì˜¤ë©´ ì´ë¥¼ ë‹¤ë¥¸ ê³³ì— ì €ì¥ì‹œì¼œì¤Œ 
 		void Set_Vector(Vector3& vector)
 		{
 			vector.x = this->x;
@@ -64,6 +65,12 @@ class Vector3 {
 			float Vz = a.z * b.z;
 
 			return Vector3(Vx, Vy, Vz);
+		}
+
+		friend ostream& operator << (ostream& ost, Vector3& pos)
+		{
+			ost << pos.x << " " << pos.y << " " << pos.z << "\n";
+			return ost;
 		}
 
 		bool operator ==(Vector3 b) {
