@@ -1,43 +1,63 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "rapidjson/document.h"     // rapidjson's DOM-style API
 #include "rapidjson/prettywriter.h" // for stringify JSON
+#include "rapidjson/filewritestream.h"
+#include <rapidjson/writer.h>
+#include <fstream> // file ì…ì¶œë ¥ê³¼ ê´€ë ¨ëœ í—¤ë” ì„ ì–¸ 
 #include <cstdio>
 #include <vector>
 
-// RapidJson »ç¿ëÀ» À§ÇÑ Testbed
-// ¿©±â¼­´Â ¾Æ¹«°Íµµ ¾ø´Â °÷¿¡¼­ JSONÈ­ ÇÑ StringÀ» ¸¸µç ÈÄ , ÆÄÀÏÀ» ÀúÀåÇÏ´Â ¿¹Á¦¸¦ ´ã°í ÀÖÀ½. 
-// Step 1. JSONÀ» ÀĞ°í ¾²±â À§ÇÑ document °´Ã¼ÀÇ ¼±¾ğ 
-// Step 2. Value¸¦ ÇÏ³ª ¼±¾ğÇØÁÜ. (array typeÀ¸·Î)
-// Step 3. Document¿¡ °ªÀ» ÇÒ´çÇÏ±â À§ÇÑ allocator ¼±¾ğ
-// Step 4. ¹İº¹¹®¿¡¼­ Æ¯Á¤ °ªÀ» ±âÁØÀ¸·Î AddMemberÇØÁÜ.  
-// Step 5. myArray¶ó´Â °÷value¸¦ allocator¸¦ ÅëÇØ ³Ö¾îÁÜ. 
-// Step 6. ÆÄÀÏ·Î ÀúÀå.  (¹Ì¿Ï) 
+// RapidJson ì‚¬ìš©ì„ ìœ„í•œ Testbed
+// ì—¬ê¸°ì„œëŠ” ì•„ë¬´ê²ƒë„ ì—†ëŠ” ê³³ì—ì„œ JSONí™” í•œ Stringì„ ë§Œë“  í›„ , íŒŒì¼ì„ ì €ì¥í•˜ëŠ” ì˜ˆì œë¥¼ ë‹´ê³  ìˆìŒ. 
+// Step 1. JSONì„ ì½ê³  ì“°ê¸° ìœ„í•œ document ê°ì²´ì˜ ì„ ì–¸ 
+// Step 2. Valueë¥¼ í•˜ë‚˜ ì„ ì–¸í•´ì¤Œ. (array typeìœ¼ë¡œ)
+// Step 3. Documentì— ê°’ì„ í• ë‹¹í•˜ê¸° ìœ„í•œ allocator ì„ ì–¸
+// Step 4. ë°˜ë³µë¬¸ì—ì„œ íŠ¹ì • ê°’ì„ ê¸°ì¤€ìœ¼ë¡œ AddMemberí•´ì¤Œ.  
+// Step 5. myArrayë¼ëŠ” ê³³valueë¥¼ allocatorë¥¼ í†µí•´ ë„£ì–´ì¤Œ. 
+// Step 6. íŒŒì¼ë¡œ ì €ì¥.  (ë¯¸ì™„) 
 
 using namespace rapidjson;
 using namespace std;
 
 int main(int, char* []) {
 	Document document;  // Default template parameter uses UTF8 and MemoryPoolAllocator.
-    document.SetObject(); // ºó JSON °´Ã¼¸¦ »ı¼ºÇÔ 
-
-    Value myArray(kArrayType); // °ªÀ» ³ÖÀ» value °´Ã¼ »ı¼º 
-    rapidjson::Document::AllocatorType& allocator = document.GetAllocator(); // document °´Ã¼¿¡ Á¢±Ù °¡´ÉÇÏ°Ô ÇØÁÖ´Â allocator °´Ã¼ Çà¼º 
-    for (int i=0; i<5; i++)
+    document.SetObject(); // ë¹ˆ JSON ê°ì²´ë¥¼ ìƒì„±í•¨ 
+    const char* output;
+    Value myArray(kArrayType); // ê°’ì„ ë„£ì„ value ê°ì²´ ìƒì„± 
+    rapidjson::Document::AllocatorType& allocator = document.GetAllocator(); // document ê°ì²´ì— ì ‘ê·¼ ê°€ëŠ¥í•˜ê²Œ í•´ì£¼ëŠ” allocator ê°ì²´ í–‰ì„± 
+    for (int i=0; i<80000; i++)
     {
         rapidjson::Value objValue;
-        objValue.SetInt(i); // valueÀÇ °ªÀ» »ı¼º 
-        //»öÀÎÀ» ³Ö°í ½ÍÀº °æ¿ì objValue.AddMember("playername",i, allocator);
-        myArray.PushBack(objValue, allocator);//allocator¸¦ ÅëÇØ °ªÀ» ÇØ´ç value ¿ÀºêÁ§Æ®¿¡ ³Ö¾îÁÜ 
+        objValue.SetInt(i); // valueì˜ ê°’ì„ ìƒì„± 
+        //ìƒ‰ì¸ì„ ë„£ê³  ì‹¶ì€ ê²½ìš° objValue.AddMember("playername",i, allocator);
+        myArray.PushBack(objValue, allocator);//allocatorë¥¼ í†µí•´ ê°’ì„ í•´ë‹¹ value ì˜¤ë¸Œì íŠ¸ì— ë„£ì–´ì¤Œ 
     }
 
-    document.AddMember("array", myArray, allocator); // µµÅ¥¸ÕÆ®¿¡ ¸â¹ö¸¦ Ãß°¡ÇØÁÜ 
+    document.AddMember("array", myArray, allocator); // ë„íë¨¼íŠ¸ì— ë©¤ë²„ë¥¼ ì¶”ê°€í•´ì¤Œ 
 
-
+    /* ì´ ë¶€ë¶„ì€ íŒŒì¼ ì•„ë‹ˆê³  í”„ë¡œê·¸ë¨ ë‚´ì—ì„œ ì¶œë ¥ì„ ë³´ê¸°ìœ„í•´ ë§Œë“¤ì–´ì§„ ì¶œë ¥ë¶€ë¶„. íŒŒì¼ ì…ì¶œë ¥ì€ ë‹¤ë¥´ê²Œ êµ¬í˜„í•´ì•¼í•¨! 
     printf("\nModified JSON with reformatting:\n");
     StringBuffer sb;
     PrettyWriter<StringBuffer> writer(sb);
     document.Accept(writer);    // Accept() traverses the DOM and generates Handler events.
     puts(sb.GetString());
-    
+    */
+
+    // jsonì„ string í˜•íƒœë¡œ ë°”ê¿”ì£¼ëŠ” ë¶€ë¶„
+    StringBuffer sb;
+    Writer<StringBuffer> writer_1(sb);
+    document.Accept(writer_1);
+    output = sb.GetString();
+    document.Parse(output);
+
+    // íŒŒì¼ìŠ¤íŠ¸ë¦¼ì„ í†µí•´ ì‹¤ì§ˆì ìœ¼ë¡œ JSON ê°ì²´ë¥¼ í…ìŠ¤íŠ¸ í˜•íƒœ íŒŒì¼ë¡œ ì €ì¥í•˜ê²Œë” í•˜ëŠ” ë¶€ë¶„ 
+    char writeBuffer[80000];
+    FILE* fp = fopen("output.json", "wb"); // non-Windows use "w"
+    FileWriteStream os(fp, writeBuffer, sizeof(writeBuffer));
+    Writer<FileWriteStream> writer(os);
+    document.Accept(writer);
+    fclose(fp);
+
+    // WriteBufferì˜ í¬ê¸°ì— ì œí•œì´ ìˆëŠ”ì§€? 
     return 0;
 }
